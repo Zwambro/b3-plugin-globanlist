@@ -14,6 +14,7 @@
 1. Create a Discord webhook in your Discord channel.
 2. Paste the webhook on discord.xml in b3/extplugins/conf.
 3. Add plugin to b3.xml: 
+
 `
 <plugin name="globanlist" config="@b3/extplugins/conf/globanlist.xml"/>
 `

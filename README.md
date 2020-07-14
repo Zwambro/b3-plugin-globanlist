@@ -5,8 +5,9 @@
 
 ---------
 ### Requirements
-- `requests` module required
+- `requests` and `pytz` modules required
   - install with `pip install requests`
+  - install with `pip install pytz`
 ---------
 ### Installation
 

@@ -1,0 +1,6 @@
+<configuration plugin="globanlist">
+        <settings name="settings">
+                <!-- Set your discord webhook here -->
+                <set name="webhook">PAST YOUR WEBHOOK HERE</set>
+        </settings>
+</configuration>

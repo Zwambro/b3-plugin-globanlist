@@ -1,8 +1,8 @@
 #
 # ################################################################### #
 #                                                                     #
-#  Discord Plugin for BigBrotherBot(B3) (www.bigbrotherbot.com)       #
-#  Copyright (c) 2018 Miltan aka WatchMiltan                          #
+#  Globanlist Plugin for BigBrotherBot(B3) (www.bigbrotherbot.com)    #
+#  Copyright (c) 2020 Zwambro                                         #
 #                                                                     #
 #  This program is free software; you can redistribute it and/or      #
 #  modify it under the terms of the GNU General Public License        #

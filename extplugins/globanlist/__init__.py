@@ -164,20 +164,20 @@ class GlobanlistPlugin(b3.plugin.Plugin):
                     time.sleep(5)
                     if event.client not in currentClients:
                         self.debug('Player not on server, maybe have been kicked or banned by b3')
-                        return             
+                        return
                     elif event.client in currentClients:
                         self.debug('Player still on server')
                         #inform online admins
                         for admin in adminList:
                             admin.message('^1A suspicious player has joined server:^7 "%s", ^1check him please^7'% (player))
                         if player not in self._bannedPlayer:
-                            self._bannedPlayer.append(player)                                     
+                            self._bannedPlayer.append(player)
                         embed = DiscordEmbed(self.url, color=1)
                         embed.set_title('Global Ban') 
-                        embed.set_desc('A suspicious player has joined %s' %(self.stripColors(server)))
+                        embed.set_desc('A suspicious player has joined **%s**' %(self.stripColors(server)))
                         embed.textbox(name='Name', value=player + ' (@' + cid + ')', inline=True)
                         embed.textbox(name='Banned on',value=hostname,inline=True)
-                        embed.textbox(name='Reason of Ban',value=reason,inline=False)
+                        embed.textbox(name='Reason of Ban',value=reason.replace('|', ''),inline=False)
                         embed.set_footnote()
                         embed.post()
                         self.debug('Globanlist message sent to Discord.')
@@ -193,20 +193,20 @@ class GlobanlistPlugin(b3.plugin.Plugin):
                     time.sleep(5)
                     if event.client not in currentClients:
                         self.debug('Player not on server, maybe has been kicked or banned by b3')
-                        return             
+                        return
                     elif event.client in currentClients:
                         self.debug('Player still on server')
                         #inform online admins
                         for admin in adminList:
                             admin.message('^1A suspicious player has joined server:^7 "%s", ^1check him please^7'% (player))
                         if player not in self._bannedPlayer:
-                            self._bannedPlayer.append(player)                                           
-                        embed = DiscordEmbed(self.url, color=1)                    
-                        embed.set_title('Global Ban')                        
-                        embed.set_desc('A suspicious player has joined %s' %(self.stripColors(server)))
+                            self._bannedPlayer.append(player)
+                        embed = DiscordEmbed(self.url, color=1)
+                        embed.set_title('Global Ban')
+                        embed.set_desc('A suspicious player has joined **%s**' %(self.stripColors(server)))
                         embed.textbox(name='Name', value=player + ' (@' + cid + ')', inline=True)
                         embed.textbox(name='Banned on',value=hostname2, inline=True)
-                        embed.textbox(name='Reason of Ban', value=reason2, inline=False)
+                        embed.textbox(name='Reason of Ban', value=reason2.replace('|', ''), inline=False)
                         embed.set_footnote()
                         embed.post()
                         self.debug('Globanlist message sent to Discord.')
@@ -221,7 +221,7 @@ class GlobanlistPlugin(b3.plugin.Plugin):
 
         admin = event.data["admin"]
         reason = event.data['reason']
-        
+
         serverid = str(event.client.id)
         guid = str(event.client.guid)
         player = event.client.name
@@ -230,7 +230,7 @@ class GlobanlistPlugin(b3.plugin.Plugin):
         c = self.console.game
         hostname = ''
         gamename = ''
-        
+
         if c.sv_hostname:
             hostname = c.sv_hostname
         if c.gameName:
@@ -256,13 +256,13 @@ class GlobanlistPlugin(b3.plugin.Plugin):
             admin_name = "B3"
         else:
             admin_name = admin.name
-        
+
         info = {
             'token': token,
             'game': gamename,
             'hostname': self.stripColors(hostname),
             'admin': self.stripColors(admin_name),
-            'player': player.replace('|', ''),
+            'player': player,
             'guid': guid,
             'ip': ip,
             'reason': self.stripColors(reason.replace(',', '')),
@@ -287,18 +287,18 @@ class GlobanlistPlugin(b3.plugin.Plugin):
         except ValueError, e:
             self.debug('error: ' + e)
             raise
-            
+
     def onDisc(self, event):
-        
+
         player = event.client.name
-        
+
         if player in self._bannedPlayer:
             embed = DiscordEmbed(self.url, color=1)
             embed.set_desc("%s has left the server" % (player))
             embed.set_footnote()
             embed.post()
             self._bannedPlayer.remove(player)
-            
+
     def cmd_zwambro(self, data, client, cmd=None):
 
         m = self._adminPlugin.parseUserCmd(data)
@@ -312,7 +312,7 @@ class GlobanlistPlugin(b3.plugin.Plugin):
         if sclient:
             guid = str(sclient.guid)
             ip = str(sclient.ip)
-            
+
             info = {'guid': guid}
             info1 = {'ip': ip}
 

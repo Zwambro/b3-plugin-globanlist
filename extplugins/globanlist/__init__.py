@@ -173,7 +173,7 @@ class GlobanlistPlugin(b3.plugin.Plugin):
                         if player not in self._bannedPlayer:
                             self._bannedPlayer.append(player)
                         embed = DiscordEmbed(self.url, color=1)
-                        embed.set_title('Global Ban') 
+                        embed.set_title('Global Ban')
                         embed.set_desc('A suspicious player has joined **%s**' %(self.stripColors(server)))
                         embed.textbox(name='Name', value=player + ' (@' + cid + ')', inline=True)
                         embed.textbox(name='Banned on',value=hostname,inline=True)
@@ -279,7 +279,7 @@ class GlobanlistPlugin(b3.plugin.Plugin):
                 return
             if player in self._bannedPlayer:
                 embed = DiscordEmbed(self.url, color=1)
-                embed.set_mapview('https://www.iconsdb.com/icons/download/green/checkmark-16.png') 
+                embed.set_mapview('https://www.iconsdb.com/icons/download/green/checkmark-16.png')
                 embed.set_desc("%s has been Banned" % (player))
                 embed.set_footnote()
                 embed.post()

@@ -275,7 +275,7 @@ class GlobanlistPlugin(b3.plugin.Plugin):
             headers = {'Content-type': 'application/json'}
             r = requests.post('https://globanlist.zwambro.pw/addban.php', data=json.dumps(info), headers=headers)
             if r.status_code == 201:
-                self.debug('Ban added perfeclty')
+                self.debug('Ban added perfectly')
                 return
             if player in self._bannedPlayer:
                 embed = DiscordEmbed(self.url, color=1)

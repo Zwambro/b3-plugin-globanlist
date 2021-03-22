@@ -20,22 +20,26 @@
 #  02110-1301, USA.                                                   #
 #                                                                     #
 # ################################################################### #
+#  15.05.2020 - v1.0 - Zwambro
+#  - first release
+#
+#  27.02.2021 - v1.1 - Zwambro
+#  - update ban/check/unban urls
+#  - add an internal db token
+#
 
-
-__version__ = '1.0'
+__version__ = '1.1'
 __author__ = 'Zwambro'
 
 import b3
 import b3.events
 import b3.plugin
-import uuid
 import requests
 import json
 import datetime
 import time
 import re
 
-from pytz import timezone
 from b3 import functions
 from b3 import clients
 from collections import defaultdict
@@ -110,7 +114,6 @@ class DiscordEmbed:
         headers = {'Content-Type': 'application/json'}
         result = requests.post(self.url, data=self.push, headers=headers)
 
-
 class GlobanlistPlugin(b3.plugin.Plugin):
     _bannedPlayer = []
     _adminPlugin = None
@@ -131,7 +134,7 @@ class GlobanlistPlugin(b3.plugin.Plugin):
 
     def onLoadConfig(self):
         self.url = str(self.config.get('settings', 'webhook'))
-        return
+        self.apiKey = str(self.config.get('settings', 'api'))
 
     def stripColors(self, s):
         return re.sub('\^[0-9]{1}', '', s)
@@ -143,9 +146,9 @@ class GlobanlistPlugin(b3.plugin.Plugin):
 
         c = self.console.game
 
-        server = ''
+        hostname = ''
         if c.sv_hostname:
-            server = c.sv_hostname
+            hostname = c.sv_hostname
 
         cid = str(event.client.id)
         player = event.client.name
@@ -153,69 +156,42 @@ class GlobanlistPlugin(b3.plugin.Plugin):
         ip = str(event.client.ip)
 
         try:
-            r = requests.get('https://globanlist.zwambro.pw/checkguid.php?guid=%s' %(guid), timeout=2)
-            r2 = requests.get('https://globanlist.zwambro.pw/checkip.php?ip=%s' %(ip), timeout=2)
+            r = requests.get('https://zwambro.pw/globanlist/checktheban?guid=%s&ip=%s' %(guid, ip), headers={'Authorization': 'Token ' + self.apiKey + ''}, timeout=2)
             if r.status_code == 200:
                 result = r.json()
-                if result["banned_guid"] == True:
-                    self.debug('this player has banned guid on globanlist')
-                    hostname = result['hostname'].title()
-                    reason = result['reason'].title()
+                if result["banned"] == True:
+                    self.debug("Found entry in globanlist")
+
                     time.sleep(5)
-                    if event.client not in currentClients:
+
+                    if event.client in currentClients:
+                        self.debug('Player still on server')
+
+                        #inform online admins
+                        for admin in adminList:
+                            admin.message('%s ^1is a suspicious player, check him'% (player))
+
+                        embed = DiscordEmbed(self.url, color=1)
+                        embed.set_title('Global Ban') 
+                        embed.set_desc('A suspicious player has joined %s' %(self.stripColors(hostname)))
+                        embed.textbox(name='Name', value=player, inline=True)
+                        embed.textbox(name='PlayerID',value=' (@' + cid + ')',inline=True)
+                        embed.set_footnote()
+                        embed.post()
+                        self.debug('Globanlist message sent to Discord')
+                        return
+                    else:
                         self.debug('Player not on server, maybe have been kicked or banned by b3')
-                        return
-                    elif event.client in currentClients:
-                        self.debug('Player still on server')
-                        #inform online admins
-                        for admin in adminList:
-                            admin.message('^1A suspicious player has joined server:^7 "%s", ^1check him please^7'% (player))
-                        if player not in self._bannedPlayer:
-                            self._bannedPlayer.append(player)
-                        embed = DiscordEmbed(self.url, color=1)
-                        embed.set_title('Global Ban')
-                        embed.set_desc('A suspicious player has joined **%s**' %(self.stripColors(server)))
-                        embed.textbox(name='Name', value=player + ' (@' + cid + ')', inline=True)
-                        embed.textbox(name='Banned on',value=hostname,inline=True)
-                        embed.textbox(name='Reason of Ban',value=reason.replace('|', ''),inline=False)
-                        embed.set_footnote()
-                        embed.post()
-                        self.debug('Globanlist message sent to Discord.')
-                        return
+                    if event.client not in self._bannedPlayer:
+                        self._bannedPlayer.append(event.client)
+                    if len(self._bannedPlayer) > 6:
+                        self._bannedPlayer.pop(0)
                     return
-                return
-            elif r2.status_code == 200:
-                result2 = r2.json()
-                if result2["banned_ip"] == True:
-                    hostname2 = result2['hostname'].title()
-                    reason2 = result2['reason'].title()
-                    self.debug('this player has banned ip on globanlist')
-                    time.sleep(5)
-                    if event.client not in currentClients:
-                        self.debug('Player not on server, maybe has been kicked or banned by b3')
-                        return
-                    elif event.client in currentClients:
-                        self.debug('Player still on server')
-                        #inform online admins
-                        for admin in adminList:
-                            admin.message('^1A suspicious player has joined server:^7 "%s", ^1check him please^7'% (player))
-                        if player not in self._bannedPlayer:
-                            self._bannedPlayer.append(player)
-                        embed = DiscordEmbed(self.url, color=1)
-                        embed.set_title('Global Ban')
-                        embed.set_desc('A suspicious player has joined **%s**' %(self.stripColors(server)))
-                        embed.textbox(name='Name', value=player + ' (@' + cid + ')', inline=True)
-                        embed.textbox(name='Banned on',value=hostname2, inline=True)
-                        embed.textbox(name='Reason of Ban', value=reason2.replace('|', ''), inline=False)
-                        embed.set_footnote()
-                        embed.post()
-                        self.debug('Globanlist message sent to Discord.')
-                        return
-                    return
-                return
-        except ValueError, e:
-            self.debug('error: ' + e)
-            raise
+                else:
+                    self.debug('No ban found on globanlist for this player')
+
+        except Exception as e:
+            self.debug('error: ' + str(e))
 
     def onBan(self, event):
 
@@ -245,48 +221,36 @@ class GlobanlistPlugin(b3.plugin.Plugin):
             if c.gameName == "iw5":
                 gamename = 'PLutoIW5'
 
-        spr = '%s:%s' %(guid, ip)
-        token = str(uuid.uuid5(uuid.NAMESPACE_DNS, spr))
-
-        fmt2 = "%d/%m/%Y %H:%M:%S"
-        now_utc = datetime.datetime.now(timezone('UTC'))
-        created = now_utc.strftime(fmt2)
-
         if admin == None:
             admin_name = "B3"
         else:
             admin_name = admin.name
 
         info = {
-            'token': token,
             'game': gamename,
-            'hostname': self.stripColors(hostname),
-            'admin': self.stripColors(admin_name),
-            'player': player,
+            'server': self.stripColors(hostname),
+            'adminname': self.stripColors(admin_name),
+            'hackername': player.replace('|', ''),
             'guid': guid,
             'ip': ip,
             'reason': self.stripColors(reason.replace(',', '')),
-            'duration': 'permanent',
-            'serverid': '@' + serverid,
-            'created': created
+            'bantype': 'Permban',
+            'gameid': '@' + serverid,
         }
-
         try:
-            headers = {'Content-type': 'application/json'}
-            r = requests.post('https://globanlist.zwambro.pw/addban.php', data=json.dumps(info), headers=headers)
+            headers = {'Content-type': 'application/json', 'Authorization': 'Token ' + self.apiKey + ''}
+            r = requests.post('https://zwambro.pw/globanlist/addban', data=json.dumps(info), headers=headers)
             if r.status_code == 201:
-                self.debug('Ban added perfeclty')
-                return
-            if player in self._bannedPlayer:
-                embed = DiscordEmbed(self.url, color=1)
-                embed.set_mapview('https://www.iconsdb.com/icons/download/green/checkmark-16.png')
-                embed.set_desc("%s has been Banned" % (player))
-                embed.set_footnote()
-                embed.post()
-            self._bannedPlayer.remove(player)
-        except ValueError, e:
-            self.debug('error: ' + e)
-            raise
+                self.debug('Ban added perfectly')
+                if event.client in self._bannedPlayer:
+                    embed = DiscordEmbed(self.url, color=1)
+                    embed.set_mapview('https://www.iconsdb.com/icons/download/green/checkmark-16.png') 
+                    embed.set_desc("%s has been Banned" % (player))
+                    embed.set_footnote()
+                    embed.post()
+                    self._bannedPlayer.remove(event.client)
+        except Exception as e:
+            self.debug('error: ' + str(e))
 
     def onDisc(self, event):
 
@@ -303,28 +267,27 @@ class GlobanlistPlugin(b3.plugin.Plugin):
 
         m = self._adminPlugin.parseUserCmd(data)
         if not m:
-            client.message('^7Invalid parameters, !zwambro @id or !zw @id')
+            client.message('^7Invalid parameters, !zwambro @id')
             return False
 
         cid = str(m[0])
         sclient = self._adminPlugin.findClientPrompt(cid, client)
-
         if sclient:
             guid = str(sclient.guid)
             ip = str(sclient.ip)
 
-            info = {'guid': guid}
-            info1 = {'ip': ip}
+            info = {'guid': guid, 'ip': ip}
 
             try:
-                headers = {'Content-type': 'application/json'}
-                r = requests.post('https://globanlist.zwambro.pw/deleteguid.php', data=json.dumps(info), headers=headers)
-                r1 = requests.post('https://globanlist.zwambro.pw/deleteip.php', data=json.dumps(info1), headers=headers)
-                if r.status_code == 200 or r1.status_code == 200:
-                    self.debug('Ban deleted completly')
-                    cmd.sayLoudOrPM(client, 'Player successfully unbanned from globanlist')
-                    return
-            except ValueError, e:
-                self.debug('error: ' + e)
-                raise
-        return True
+                headers = {'Content-type': 'application/json', 'Authorization': 'Token ' + self.apiKey + ''}
+                r = requests.post('https://zwambro.pw/globanlist/unban', data=json.dumps(info), headers=headers)
+                if r.status_code == 200:
+                    result = r.json()
+                    if result["active_ban"] == True and result["unbanned"] == True:
+                        self.debug('Ban deleted completly')
+                        cmd.sayLoudOrPM(client, 'Player successfully unbanned from globanlist')
+                        return
+                    else:
+                        client.message('No ban exists')
+            except Exception as e:
+                self.debug('error: ' + str(e))

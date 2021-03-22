@@ -2,5 +2,6 @@
         <settings name="settings">
                 <!-- Set your discord webhook here -->
                 <set name="webhook">PAST YOUR WEBHOOK HERE</set>
+                <set name="api">PAST YOUR ZWAMBRO API HERE</set>
         </settings>
 </configuration>

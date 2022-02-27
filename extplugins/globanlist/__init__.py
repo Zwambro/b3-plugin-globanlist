@@ -27,8 +27,12 @@
 #  - update ban/check/unban urls
 #  - add an internal db token
 #
+#  27.02.2022 - v1.2 - Zwambro
+#  - add Ban Credibility
+#  - clean discord embed syntax
+#
 
-__version__ = '1.1'
+__version__ = '1.2'
 __author__ = 'Zwambro'
 
 import b3
@@ -40,8 +44,6 @@ import datetime
 import time
 import re
 
-from b3 import functions
-from b3 import clients
 from collections import defaultdict
 
 class DiscordEmbed:
@@ -115,7 +117,6 @@ class DiscordEmbed:
         result = requests.post(self.url, data=self.push, headers=headers)
 
 class GlobanlistPlugin(b3.plugin.Plugin):
-    _bannedPlayer = []
     _adminPlugin = None
 
     def onStartup(self):
@@ -175,17 +176,14 @@ class GlobanlistPlugin(b3.plugin.Plugin):
                         embed.set_title('Global Ban') 
                         embed.set_desc('A suspicious player has joined %s' %(self.stripColors(hostname)))
                         embed.textbox(name='Name', value=player, inline=True)
-                        embed.textbox(name='PlayerID',value=' (@' + cid + ')',inline=True)
+                        embed.textbox(name='PlayerID', value=' (@' + cid + ')', inline=True)
+                        embed.textbox(name='Ban Credibility', value=result["banCredibility"], inline=False)
                         embed.set_footnote()
                         embed.post()
                         self.debug('Globanlist message sent to Discord')
                         return
                     else:
                         self.debug('Player not on server, maybe have been kicked or banned by b3')
-                    if event.client not in self._bannedPlayer:
-                        self._bannedPlayer.append(event.client)
-                    if len(self._bannedPlayer) > 6:
-                        self._bannedPlayer.pop(0)
                     return
                 else:
                     self.debug('No ban found on globanlist for this player')
@@ -242,26 +240,8 @@ class GlobanlistPlugin(b3.plugin.Plugin):
             r = requests.post('https://zwambro.pw/globanlist/addban', data=json.dumps(info), headers=headers)
             if r.status_code == 201:
                 self.debug('Ban added perfectly')
-                if event.client in self._bannedPlayer:
-                    embed = DiscordEmbed(self.url, color=1)
-                    embed.set_mapview('https://www.iconsdb.com/icons/download/green/checkmark-16.png') 
-                    embed.set_desc("%s has been Banned" % (player))
-                    embed.set_footnote()
-                    embed.post()
-                    self._bannedPlayer.remove(event.client)
         except Exception as e:
             self.debug('error: ' + str(e))
-
-    def onDisc(self, event):
-
-        player = event.client.name
-
-        if player in self._bannedPlayer:
-            embed = DiscordEmbed(self.url, color=1)
-            embed.set_desc("%s has left the server" % (player))
-            embed.set_footnote()
-            embed.post()
-            self._bannedPlayer.remove(player)
 
     def cmd_zwambro(self, data, client, cmd=None):
 
